@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HB Picker</title>
+    <!-- Favicon for the tab -->
+    <link rel="icon" type="image/png" href="https://github.com/Md33g/HB-Picker/blob/main/bunnyicon.png?raw=true">
+    <style>
+        body {
+            text-align: center;
+            background: #000000;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        #header, #footer, #extractColors, #resetColors, #colorBox, .colorTile {
+            border-radius: 20px; /* Squircle shape (rounded corners but not fully circular) */
+        }
+        #header {
+            font-size: 28px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-bottom: 3px solid #ff4d4d;
+            box-shadow: 0 4px 10px rgba(255, 77, 77, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-shadow: 2px 2px 5px rgba(255, 77, 77, 0.7);
+        }
+        #header img {
+            height: 40px;
+            border-radius: 10px;
+        }
+        #footer {
+            margin-top: 20px;
+            font-size: 14px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-top: 3px solid #ff4d4d;
+            text-shadow: 2px 2px 5px rgba(255, 77, 77, 0.7);
+        }
+        #colorBox {
+            width: 120px;
+            height: 120px;
+            margin: 10px auto;
+            border: 3px solid white;
+            box-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
+        }
+        #colorInfo {
+            margin-top: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: 2px 2px 5px rgba(255, 77, 77, 0.7);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #uniqueColors {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .colorTile {
+            width: 35px;
+            height: 35px;
+            margin: 3px;
+            border: 2px solid white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .colorTile:hover {
+            transform: scale(1.1);
+        }
+        button {
+            background: #ff4d4d;
+            border: none;
+            padding: 10px 15px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(255, 77, 77, 0.5);
+            transition: background 0.3s, transform 0.2s;
+            text-shadow: 2px 2px 5px rgba(255, 77, 77, 0.7);
+        }
+        button:hover {
+            background: #e60000;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <!-- Updated Header Icon -->
+        <img src="https://github.com/Md33g/HB-Picker/blob/main/bunnyicon.png?raw=true" alt="Logo">
+        HB Picker
+    </div>
+    <input type="file" id="fileInput" accept="image/*">
+    <br><br>
+    <img id="image" style="max-width: 100%; cursor: crosshair; border-radius: 10px;">
+    <canvas id="canvas" style="display: none;"></canvas>
+    <div id="colorBox"></div>
+    <div id="colorInfo" onclick="copyToClipboard()">Welcome :3.</div>
+    <button id="extractColors">Extract Colors</button>
+    <button id="resetColors">Reset Colors</button>
+    <div id="uniqueColors"></div>
+    <div id="footer">Made by Md33g</div>
+    
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const image = document.getElementById('image');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const colorBox = document.getElementById('colorBox');
+        const colorInfo = document.getElementById('colorInfo');
+        const uniqueColorsDiv = document.getElementById('uniqueColors');
+        const extractColorsBtn = document.getElementById('extractColors');
+        const resetColorsBtn = document.getElementById('resetColors');
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => { image.src = e.target.result; };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        image.onload = function () {
+            canvas.width = image.width;
+            canvas.height = image.height;
+            ctx.drawImage(image, 0, 0);
+        };
+
+        image.addEventListener('click', (event) => {
+            const rect = image.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+            updateColorDisplay(pixel);
+        });
+
+        function updateColorDisplay(pixel) {
+            const r = pixel[0];
+            const g = pixel[1];
+            const b = pixel[2];
+            const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+            const hsl = rgbToHsl(r, g, b);
+
+            const color = `rgb(${r},${g},${b})`;
+            colorBox.style.backgroundColor = color;
+
+            colorInfo.innerHTML = `RGB: ${r}, ${g}, ${b}<br>HEX: ${hex}<br>HSL: ${hsl}<br>Click to Copy HEX`;
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255;
+            g /= 255;
+            b /= 255;
+
+            let max = Math.max(r, g, b),
+                min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0; // achromatic
+            } else {
+                let d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+
+            return `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
+        }
+
+        extractColorsBtn.addEventListener('click', () => {
+            uniqueColorsDiv.innerHTML = '';
+            const uniqueColors = new Set();
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            for (let i = 0; i < imgData.length; i += 4) {
+                const color = `rgb(${imgData[i]},${imgData[i+1]},${imgData[i+2]})`;
+                uniqueColors.add(color);
+            }
+            uniqueColors.forEach(color => {
+                const div = document.createElement('div');
+                div.className = 'colorTile';
+                div.style.backgroundColor = color;
+                div.addEventListener('click', () => {
+                    updateColorDisplay(color.match(/\d+/g).map(Number));
+                });
+                uniqueColorsDiv.appendChild(div);
+            });
+        });
+
+        resetColorsBtn.addEventListener('click', () => {
+            colorBox.style.backgroundColor = 'transparent';
+            colorInfo.innerHTML = 'Welcome to my website';
+            uniqueColorsDiv.innerHTML = '';
+        });
+
+        function copyToClipboard() {
+            const hex = colorInfo.innerText.split('\n')[1].split(': ')[1];
+            navigator.clipboard.writeText(hex).then(() => {
+                alert('Color HEX copied to clipboard!');
+            });
+        }
+    </script>
+</body>
+</html>
